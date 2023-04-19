@@ -1,5 +1,5 @@
 import { SxProps, Theme } from '@mui/material';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { defaultPaperStyle } from './defaultStyle';
 
 // 3) interface仅仅是为了适应下面数据结构的需要
@@ -20,11 +20,18 @@ export function useCustomDialog(props: CustomDialogProps) {
   const { data, _dismiss: dismiss, onClose, sx } = props;
   const [isOpen, setIsOpen] = useState(true);
 
-  const close = (data?: any) => {
-    setIsOpen(false);
-    onClose?.(data);
-    dismiss?.();
-  };
+  // 快速双击按钮时,会导致onClose被多次执行,为此借助isOpen标记
+  // 虽然双击时,modal还没来得及关闭,但第二次点击时,在数据上,isOpen已经为false
+  const close = useCallback(
+    (data?: any) => {
+      if (!open) return;
+      setIsOpen(false);
+
+      onClose?.(data);
+      dismiss?.();
+    },
+    [isOpen]
+  );
 
   // Paper的默认配置由外部独立文件给出
   const paperSx = { ...defaultPaperStyle, ...sx };
